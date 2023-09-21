@@ -31,6 +31,7 @@ const shopify = shopifyApp({
       shopify.registerWebhooks({ session });
     },
   },
+  isEmbeddedApp: false,
   ...(process.env.SHOP_CUSTOM_DOMAIN
     ? { customShopDomains: [process.env.SHOP_CUSTOM_DOMAIN] }
     : {}),

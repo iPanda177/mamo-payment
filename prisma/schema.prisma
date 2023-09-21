@@ -20,3 +20,9 @@ model Session {
   accessToken String
   userId      BigInt?
 }
+
+model Shop {
+  id          Int       @id @default(autoincrement())
+  shop        String    @unique
+  accessToken String
+}

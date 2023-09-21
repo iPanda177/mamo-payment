@@ -1,9 +1,8 @@
-import { useEffect } from "react";
+import {useCallback, useEffect, useState} from "react";
 import { json } from "@remix-run/node";
 import {
   useActionData,
   useLoaderData,
-  useNavigation,
   useSubmit,
 } from "@remix-run/react";
 import {
@@ -14,264 +13,196 @@ import {
   Card,
   Button,
   HorizontalStack,
-  Box,
   Divider,
   List,
   Link,
+  TextField,
 } from "@shopify/polaris";
-
-import { authenticate } from "../shopify.server";
+import { LATEST_API_VERSION } from "@shopify/shopify-app-remix/server";
+import { authenticate } from "~/shopify.server";
+import prisma from "../db.server";
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
+  const shopData = await prisma.shop.findUnique({
+    where: {
+      shop: session.shop,
+    }
+  });
 
-  return json({ shop: session.shop.replace(".myshopify.com", "") });
+  return shopData ? json({ shopData }) : json({ shopData: { shop: session.shop, accessToken: null }});
 };
 
-export async function action({ request }) {
-  const { admin } = await authenticate.admin(request);
+export async function action({ request, params }) {
+  try {
+    const { session } = await authenticate.admin(request);
 
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($input: ProductInput!) {
-        productCreate(input: $input) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
+    const data = {
+      ...Object.fromEntries(await request.formData()),
+    }
+
+    const shopData = await prisma.shop.findUnique({
+      where: {
+        shop: data.shop,
+      }
+    });
+
+    if (shopData) {
+      const updatedShop = await prisma.shop.update({
+        where: {
+          shop: data.shop,
+          },
+        data: {
+          accessToken: session.accessToken,
+        }
+      });
+      return json({ status: 'Updated', updatedShop }, { status: 200 });
+    }
+
+    // @ts-ignore
+    const newShop = await prisma.shop.create({ data });
+
+    const apiUrl = `https://${data.shop}/payments_apps/api/${LATEST_API_VERSION}/graphql.json`;
+    const graphQlContent = `
+      mutation paymentsAppConfigure($ready: Boolean!, $externalHandle: String!) {
+        paymentsAppConfigure(ready: $ready, externalHandle: $externalHandle) {
+          paymentsAppConfiguration {
+            externalHandle
+            ready
+          }
+          userErrors {
+            field
+            message
           }
         }
-      }`,
-    {
-      variables: {
-        input: {
-          title: `${color} Snowboard`,
-          variants: [{ price: Math.random() * 100 }],
-        },
-      },
+      }
+    `;
+    const variables = {
+      externalHandle: 'Mamo',
+      ready: true,
     }
-  );
+    const requestOptions = {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": session.accessToken,
+      },
+      body: JSON.stringify({
+        query: graphQlContent,
+        variables: variables,
+      }),
+    };
 
-  const responseJson = await response.json();
+    const activatePayment = fetch(apiUrl, requestOptions)
+        .then((response) => response.json())
+        .then((data) => data.data.paymentsAppConfigure)
+        .catch(error => console.log(error));
 
-  return json({
-    product: responseJson.data.productCreate.product,
-  });
+    console.log(process.env.SHOPIFY_API_KEY)
+
+    return json({ status: 'Activated', activatePayment }, { status: 201 });
+  } catch (err) {
+    console.log(err);
+  }
 }
 
 export default function Index() {
-  const nav = useNavigation();
-  const { shop } = useLoaderData();
+  const { shopData } = useLoaderData();
   const actionData = useActionData();
   const submit = useSubmit();
-
-  const isLoading =
-    ["loading", "submitting"].includes(nav.state) && nav.formMethod === "POST";
-
-  const productId = actionData?.product?.id.replace(
-    "gid://shopify/Product/",
-    ""
-  );
+  const [key, setKey] = useState(shopData.accessToken || '');
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    if (productId) {
-      shopify.toast.show("Product created");
+    if (actionData && actionData.status === 'Activated') {
+      window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${'0e2f137681cd5353bf3566ec0d880b9c'}/settings`
     }
-  }, [productId]);
+  }, [actionData]);
 
-  const generateProduct = () => submit({}, { replace: true, method: "POST" });
+  const toggleIsEditing = useCallback(() => setIsEditing((active) => !active), []);
+  const handleChange = useCallback(
+    (newValue) => setKey(newValue),
+    [],
+  );
+
+  const saveAPIkey = async (key, shop) => {
+    const data = {
+      shop: shop,
+      accessToken: key,
+    }
+
+    submit(data, { method: "post" });
+  }
 
   return (
-    <Page>
-      <ui-title-bar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
-      </ui-title-bar>
-      <VerticalStack gap="5">
-        <Layout>
-          <Layout.Section>
-            <Card>
-              <VerticalStack gap="5">
-                <VerticalStack gap="2">
-                  <Text as="h2" variant="headingMd">
-                    Congrats on creating a new Shopify app 🎉
-                  </Text>
-                  <Text variant="bodyMd" as="p">
-                    This embedded app template uses{" "}
-                    <Link
-                      url="https://shopify.dev/docs/apps/tools/app-bridge"
-                      target="_blank"
-                    >
-                      App Bridge
-                    </Link>{" "}
-                    interface examples like an{" "}
-                    <Link url="/app/additional">
-                      additional page in the app nav
-                    </Link>
-                    , as well as an{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql"
-                      target="_blank"
-                    >
-                      Admin GraphQL
-                    </Link>{" "}
-                    mutation demo, to provide a starting point for app
-                    development.
-                  </Text>
-                </VerticalStack>
-                <VerticalStack gap="2">
-                  <Text as="h3" variant="headingMd">
-                    Get started with products
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for
-                    that product. Learn more about the{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-                      target="_blank"
-                    >
-                      productCreate
-                    </Link>{" "}
-                    mutation in our API references.
-                  </Text>
-                </VerticalStack>
-                <HorizontalStack gap="3" align="end">
-                  {actionData?.product && (
-                    <Button
-                      url={`https://admin.shopify.com/store/${shop}/admin/products/${productId}`}
-                      target="_blank"
-                    >
-                      View product
-                    </Button>
-                  )}
-                  <Button loading={isLoading} primary onClick={generateProduct}>
-                    Generate a product
-                  </Button>
-                </HorizontalStack>
-                {actionData?.product && (
-                  <Box
-                    padding="4"
-                    background="bg-subdued"
-                    borderColor="border"
-                    borderWidth="1"
-                    borderRadius="2"
-                    overflowX="scroll"
-                  >
-                    <pre style={{ margin: 0 }}>
-                      <code>{JSON.stringify(actionData.product, null, 2)}</code>
-                    </pre>
-                  </Box>
-                )}
-              </VerticalStack>
-            </Card>
-          </Layout.Section>
-          <Layout.Section secondary>
+    <Page narrowWidth>
+      <Layout>
+        <Layout.Section>
+          <Card>
             <VerticalStack gap="5">
-              <Card>
-                <VerticalStack gap="2">
-                  <Text as="h2" variant="headingMd">
-                    App template specs
-                  </Text>
-                  <VerticalStack gap="2">
-                    <Divider />
-                    <HorizontalStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Framework
-                      </Text>
-                      <Link url="https://remix.run" target="_blank">
-                        Remix
-                      </Link>
-                    </HorizontalStack>
-                    <Divider />
-                    <HorizontalStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Database
-                      </Text>
-                      <Link url="https://www.prisma.io/" target="_blank">
-                        Prisma
-                      </Link>
-                    </HorizontalStack>
-                    <Divider />
-                    <HorizontalStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Interface
-                      </Text>
-                      <span>
-                        <Link url="https://polaris.shopify.com" target="_blank">
-                          Polaris
-                        </Link>
-                        {", "}
-                        <Link
-                          url="https://shopify.dev/docs/apps/tools/app-bridge"
+              <VerticalStack gap="2">
+                <Text as="h2" variant="headingMd">
+                  Connect your Shopify Shop with Mamo Business:
+                </Text>
+
+                <List type={"bullet"}>
+                  <List.Item>
+                    <Text variant="bodyMd" as="p">
+                      Create a new{" "}
+                      <Link
+                          url="https://dashboard.mamopay.com/"
                           target="_blank"
-                        >
-                          App Bridge
-                        </Link>
-                      </span>
-                    </HorizontalStack>
-                    <Divider />
-                    <HorizontalStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        API
-                      </Text>
-                      <Link
-                        url="https://shopify.dev/docs/api/admin-graphql"
-                        target="_blank"
                       >
-                        GraphQL API
-                      </Link>
-                    </HorizontalStack>
-                  </VerticalStack>
-                </VerticalStack>
-              </Card>
-              <Card>
-                <VerticalStack gap="2">
-                  <Text as="h2" variant="headingMd">
-                    Next steps
-                  </Text>
-                  <List spacing="extraTight">
-                    <List.Item>
-                      Build an{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
-                        target="_blank"
-                      >
-                        {" "}
-                        example app
+                        Mamo Business account
                       </Link>{" "}
-                      to get started
-                    </List.Item>
-                    <List.Item>
-                      Explore Shopify’s API with{" "}
+                      or connect to an existing one
+                    </Text>
+                  </List.Item>
+
+                  <List.Item>
+                    <Text variant="bodyMd" as="p">
+                      Navigate to the{" "}
                       <Link
-                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-                        target="_blank"
+                          url="https://dashboard.mamopay.com/manage/developer"
+                          target="_blank"
                       >
-                        GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
-                </VerticalStack>
-              </Card>
+                        Developer
+                      </Link>{" "}
+                      page
+                    </Text>
+                  </List.Item>
+
+                  <List.Item>
+                    <Text variant="bodyMd" as="p">
+                      Copy your API key and paste it below
+                    </Text>
+                  </List.Item>
+                </List>
+
+                <Divider />
+
+                <TextField
+                    label="API key"
+                    value={key}
+                    onChange={handleChange}
+                    autoComplete="off"
+                    disabled={shopData.accessToken && !isEditing}
+                />
+
+              </VerticalStack>
+              <HorizontalStack gap="3" align="end">
+                <Button disabled={!shopData.accessToken} onClick={() => toggleIsEditing()}>
+                    {isEditing ? 'Cancel' : 'Edit'}
+                </Button>
+
+                <Button primary disabled={shopData.accessToken && !isEditing} onClick={() => saveAPIkey(key, shopData.shop)}>
+                  Submit
+                </Button>
+              </HorizontalStack>
             </VerticalStack>
-          </Layout.Section>
-        </Layout>
-      </VerticalStack>
+          </Card>
+        </Layout.Section>
+      </Layout>
     </Page>
   );
 }

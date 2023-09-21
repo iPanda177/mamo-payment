@@ -3,11 +3,11 @@
 name = "mamo-payment-app"
 client_id = "0e2f137681cd5353bf3566ec0d880b9c"
 application_url = "https://mamo-app.dev-test.pro"
-embedded = true
+embedded = false
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_payment_gateways,write_payment_sessions"
 
 [auth]
 redirect_urls = [
