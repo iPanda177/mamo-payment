@@ -22,6 +22,9 @@ import { LATEST_API_VERSION } from "@shopify/shopify-app-remix/server";
 import { authenticate } from "~/shopify.server";
 import prisma from "../db.server";
 
+import * as dotenv from 'dotenv';
+dotenv.config();
+
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shopData = await prisma.shop.findUnique({
@@ -30,7 +33,7 @@ export const loader = async ({ request }) => {
     }
   });
 
-  return shopData ? json({ shopData }) : json({ shopData: { shop: session.shop, accessToken: null }});
+  return shopData ? json({ shopData }) : json({ shopData: { shop: session.shop, accessToken: null, sessionId: session.id }});
 };
 
 export async function action({ request, params }) {
@@ -53,14 +56,19 @@ export async function action({ request, params }) {
           shop: data.shop,
           },
         data: {
-          accessToken: session.accessToken,
+          accessToken: data.key,
         }
       });
       return json({ status: 'Updated', updatedShop }, { status: 200 });
     }
 
-    // @ts-ignore
-    const newShop = await prisma.shop.create({ data });
+    await prisma.shop.create({
+      data: {
+        shop: data.shop,
+        accessToken: data.accessToken,
+        sessionId: session.id,
+      }
+    });
 
     const apiUrl = `https://${data.shop}/payments_apps/api/${LATEST_API_VERSION}/graphql.json`;
     const graphQlContent = `
@@ -115,7 +123,7 @@ export default function Index() {
 
   useEffect(() => {
     if (actionData && actionData.status === 'Activated') {
-      window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${'0e2f137681cd5353bf3566ec0d880b9c'}/settings`
+      window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${process.env.APP_API_KEY}/settings`
     }
   }, [actionData]);
 

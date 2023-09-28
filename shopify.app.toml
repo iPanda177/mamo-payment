@@ -2,7 +2,7 @@
 
 name = "mamo-payment-app"
 client_id = "0e2f137681cd5353bf3566ec0d880b9c"
-application_url = "https://mamo-app.dev-test.pro"
+application_url = "https://mamo.dev-test.pro"
 embedded = false
 
 [access_scopes]
@@ -11,9 +11,9 @@ scopes = "write_payment_gateways,write_payment_sessions"
 
 [auth]
 redirect_urls = [
-  "https://mamo-app.dev-test.pro/auth/callback",
-  "https://mamo-app.dev-test.pro/auth/shopify/callback",
-  "https://mamo-app.dev-test.pro/api/auth/callback"
+  "https://mamo.dev-test.pro/auth/callback",
+  "https://mamo.dev-test.pro/auth/shopify/callback",
+  "https://mamo.dev-test.pro/api/auth/callback"
 ]
 
 [webhooks]

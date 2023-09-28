@@ -22,7 +22,20 @@ model Session {
 }
 
 model Shop {
-  id          Int       @id @default(autoincrement())
-  shop        String    @unique
-  accessToken String
+  id                 Int       @id @default(autoincrement())
+  shop               String    @unique
+  accessToken        String
+  sessionId          String
+}
+
+model Payment {
+  id            Int     @id @default(autoincrement())
+  requestId     String  @unique
+  returnUrl     String
+  paymentId     String  @unique
+  mamoPaymentId String? @unique
+  amount        String
+  status        String
+  refundGid     String?
+  shop          String
 }
