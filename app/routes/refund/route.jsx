@@ -15,13 +15,15 @@ export async function action({ request }) {
       }
     });
 
+    console.log(refund, store, payment)
+
     const shopData = await prisma.shop.findUnique({ where: { shop: store } });
 
     if (!payment || payment.status !== 'resolved' || !shopData) {
       return json({ error: 'No payment found' }, { status: 404 });
     }
 
-    prisma.payment.update({
+    await prisma.payment.update({
       where: {
         paymentId: refund.payment_id,
       },
@@ -39,11 +41,15 @@ export async function action({ request }) {
         accept: 'application/json',
         Authorization: `Bearer ${shopData.accessToken}`,
       },
-      body: JSON.stringify({ amount: payment.amount }),
+      body: JSON.stringify({ amount: refund.amount }),
     });
 
+    console.log(createRefund.ok)
+
     if (!createRefund.ok) {
+      console.log('here')
       const error = await createRefund.json();
+      console.log(error)
       return json({ error }, { status: createRefund.status });
     }
 

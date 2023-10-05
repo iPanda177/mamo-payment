@@ -21,12 +21,9 @@ import {
 import { LATEST_API_VERSION } from "@shopify/shopify-app-remix/server";
 import { authenticate } from "~/shopify.server";
 import prisma from "../db.server";
-
-import * as dotenv from 'dotenv';
-dotenv.config();
-
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
+
   const shopData = await prisma.shop.findUnique({
     where: {
       shop: session.shop,
@@ -39,6 +36,10 @@ export const loader = async ({ request }) => {
 export async function action({ request, params }) {
   try {
     const { session } = await authenticate.admin(request);
+
+    if (!session || !session.accessToken) {
+      return json({ error: 'No session found' }, { status: 404 });
+    }
 
     const data = {
       ...Object.fromEntries(await request.formData()),
@@ -106,8 +107,6 @@ export async function action({ request, params }) {
         .then((data) => data.data.paymentsAppConfigure)
         .catch(error => console.log(error));
 
-    console.log(process.env.SHOPIFY_API_KEY)
-
     return json({ status: 'Activated', activatePayment }, { status: 201 });
   } catch (err) {
     console.log(err);
@@ -123,7 +122,7 @@ export default function Index() {
 
   useEffect(() => {
     if (actionData && actionData.status === 'Activated') {
-      window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${process.env.APP_API_KEY}/settings`
+      window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${'0e2f137681cd5353bf3566ec0d880b9c'}/settings`
     }
   }, [actionData]);
 

@@ -53,13 +53,12 @@ export async function action({ request }) {
       return json({ error }, { status: createPaymentLink.status });
     }
 
-    const { payment_url, id } = await createPaymentLink.json();
+    const { payment_url } = await createPaymentLink.json();
     await prisma.payment.create({
       data: {
         requestId: requestId,
         returnUrl: payment_url,
         paymentId: payment.id,
-        mamoPaymentId: id,
         amount: payment.amount,
         status: 'created',
         shop: store,

@@ -11,6 +11,7 @@ export const loader = async ({ request }) => {
     const payment_id = url.searchParams.get('payment_id');
     const gid = url.searchParams.get('gid');
     const shop = url.searchParams.get('shop');
+    const transaction_id = url.searchParams.get('transactionId');
 
     if (!shop || !payment_id) {
       return json({ error: 'No shop found' }, { status: 500 });
@@ -97,7 +98,8 @@ export const loader = async ({ request }) => {
             paymentId: payment_id,
           },
           data: {
-            status: 'resolved'
+            status: 'resolved',
+            mamoPaymentId: transaction_id,
           },
         });
 
