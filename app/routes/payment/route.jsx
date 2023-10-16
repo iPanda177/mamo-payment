@@ -7,6 +7,7 @@ dotenv.config();
 export async function action({ request }) {
   try {
     const payment = await request.json();
+    console.log(payment)
     const store = request.headers.get('Shopify-Shop-Domain');
     const requestId = request.headers.get('Shopify-Request-Id');
 
@@ -22,7 +23,7 @@ export async function action({ request }) {
       return json({ error: 'No shop found' }, { status: 404 });
     }
 
-    const createPaymentLink = await fetch(`${process.env.SANDBOX_API}/links`, {
+    const createPaymentLink = await fetch(`${payment.test ? process.env.SANDBOX_API : process.env.PRODUCTION_API}/links`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -31,14 +32,16 @@ export async function action({ request }) {
       },
       body: JSON.stringify({
         title: 'Shopify Cart',
-        return_url: `${process.env.APP_URL_DEV}/success`,
-        failure_return_url: `${process.env.APP_URL}/failure`,
+        return_url: `${process.env.SHOPIFY_APP_URL}/success`,
+        failure_return_url: `${process.env.SHOPIFY_APP_URL}/failure`,
         amount: payment.amount,
         amount_currency: payment.currency,
         enable_quantity: false,
         first_name: payment.customer.billing_address.given_name || payment.customer.shipping_address.given_name,
         last_name: payment.customer.billing_address.family_name || payment.customer.shipping_address.family_name,
         email: payment.customer.email,
+        external_id: payment.id,
+        platform: 'shopify',
         custom_data: {
           payment_id: payment.id,
           gid: payment.gid,

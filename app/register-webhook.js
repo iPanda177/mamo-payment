@@ -8,18 +8,17 @@ async function registerWebhook() {
   const webhooks = await fetch(url, options);
   const webhooksData = await webhooks.json();
 
-  console.log(webhooksData.filter(webhook => webhook.url.includes(`${process.env.APP_URL_DEV}/refunded`)));
+  console.log(webhooksData.filter(webhook => webhook.url.includes(`${process.env.SHOPIFY_APP_URL}/refunded`)));
 
-  if (!webhooksData.find(webhook => webhook.url.includes(`${process.env.APP_URL_DEV}/refunded`))) {
+  if (!webhooksData.find(webhook => webhook.url.includes(`${process.env.APP_URL}/refunded`))) {
     const postOptions = {
       method: 'POST',
       headers: {
         accept: 'application/json',
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${'24324t252f234552'}`
       },
       body: JSON.stringify({
-        url: `${process.env.APP_URL_DEV}/refunded`,
+        url: `${process.env.SHOPIFY_APP_URL}/refunded`,
         enabled_events: [
           'charge.refunded',
           'charge.refund_failed',
