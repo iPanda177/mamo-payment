@@ -11,6 +11,34 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 export async function loader({ request }) {
   await authenticate.admin(request);
 
+  const url = `${process.env.SANDBOX_API}/webhooks`;
+  const options = {method: 'GET', headers: {accept: 'application/json'}};
+
+  const webhooks = await fetch(url, options);
+  const webhooksData = await webhooks.json();
+
+  console.log(webhooksData.filter(webhook => webhook.url.includes(`${process.env.SHOPIFY_APP_URL}/refunded`)));
+
+  if (!webhooksData.find(webhook => webhook.url.includes(`${process.env.APP_URL}/refunded`))) {
+    const postOptions = {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `${process.env.SHOPIFY_APP_URL}/refunded`,
+        enabled_events: [
+          'charge.refunded',
+          'charge.refund_failed',
+        ]
+      }),
+    };
+
+    const createWebhook = await fetch(url, postOptions);
+    console.log(await createWebhook.json());
+  }
+
   return json({ apiKey: process.env.SHOPIFY_API_KEY });
 }
 
