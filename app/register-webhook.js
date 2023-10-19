@@ -32,15 +32,3 @@ async function registerWebhook() {
 }
 
 registerWebhook();
-// (async function removeWebhook() {
-//   const removing = await fetch(`https://sandbox.business.mamopay.com/manage_api/v1/webhooks/MPB-WH-2E8A745A8C`, {
-//     method: 'DELETE',
-//     headers: {
-//       accept: 'application/json',
-//       'Content-Type': 'application/json',
-//     }
-//   })
-//
-//
-//   console.log(await removing.json())
-// })();
