@@ -31,4 +31,4 @@ async function registerWebhook() {
   }
 }
 
-registerWebhook();
+export default registerWebhook();

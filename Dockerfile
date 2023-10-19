@@ -6,6 +6,5 @@ COPY . .
 
 RUN npm install
 RUN npm run build
-RUN node ./app/register-webhook.js
 
 CMD ["npm", "run", "start"]
