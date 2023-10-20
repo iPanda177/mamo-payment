@@ -3,7 +3,7 @@ import {LATEST_API_VERSION} from "@shopify/shopify-app-remix/server";
 import {json} from "@remix-run/node";
 
 export async function action({ request }) {
-  // try {
+  try {
     const refund = await request.json();
 
     console.log(refund)
@@ -95,8 +95,8 @@ export async function action({ request }) {
     }
 
     return json({ ok: true }, { status: 200 });
-  // } catch (err) {
-  //   console.log(err)
-  //   return json({ error: 'Something went wrong' }, { status: 200 });
-  // }
+  } catch (err) {
+    console.log(err)
+    return json({ error: 'Something went wrong' }, { status: 200 });
+  }
 }
