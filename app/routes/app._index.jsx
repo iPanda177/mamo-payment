@@ -54,7 +54,7 @@ export async function action({ request, params }) {
       method: 'GET',
       headers: {
         accept: 'application/json',
-        Authorization: `Bearer ${data.key}`,
+        Authorization: `Bearer ${data.accessToken}`,
       }
     });
 
