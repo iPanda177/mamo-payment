@@ -1,3 +1,7 @@
 .cache
+.git
+.env
+.idea
+.vscode
 build
 node_modules

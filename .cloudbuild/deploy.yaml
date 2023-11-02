@@ -1,0 +1,45 @@
+steps:
+# Build docker image.
+- id: 'build-docker-image'
+  name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker build \
+    --file=./Dockerfile \
+    -t 'asia.gcr.io/$PROJECT_ID/shopify-app:$SHORT_SHA' \
+    -t 'asia.gcr.io/$PROJECT_ID/shopify-app:latest' \
+    .
+
+# Push docker images to GCR.
+- id: 'push-docker-image'
+  name: 'gcr.io/cloud-builders/docker'
+  waitFor: ['build-docker-image']
+  entrypoint: 'bash'
+  args:
+    - '-c'
+    - |
+      docker push asia.gcr.io/$PROJECT_ID/shopify-app:$SHORT_SHA
+      docker push asia.gcr.io/$PROJECT_ID/shopify-app:latest
+
+# Deploy to Cloud Run.
+-  id: 'deploy-to-cloud-run'
+   name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+   entrypoint: bash
+   args:
+   - '-c'
+   - |
+    gcloud run deploy shopify-app-production \
+    --image asia.gcr.io/$PROJECT_ID/shopify-app:$SHORT_SHA \
+    --region $_REGION \
+    --platform managed \
+    --memory 512Mi \
+    --concurrency 80 \
+    --min-instances 1 \
+    --max-instances 3
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+
+timeout: 1800s # 30 minutes.
