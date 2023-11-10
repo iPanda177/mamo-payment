@@ -44,33 +44,66 @@ export async function action({ request, params }) {
       ...Object.fromEntries(await request.formData()),
     }
 
+    console.log(data)
+
     const shopData = await prisma.shop.findUnique({
       where: {
         shop: data.shop,
       }
     });
 
-    const checkValidToken = await fetch(`${process.env.PRODUCTION_API}/me`, {
-      method: 'GET',
-      headers: {
-        accept: 'application/json',
-        Authorization: `Bearer ${data.accessToken}`,
-      }
-    });
+    const updatedData = {
+      accessToken: null,
+      testAccessToken: null,
+    }
 
-    if (checkValidToken.status !== 200) {
-      const error = await checkValidToken.json();
-      return json({ status: 'Unauthorized', error }, { status: checkValidToken.status });
+    if (data.accessToken) {
+      const checkValidToken = await fetch(`${process.env.PRODUCTION_API}/me`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          Authorization: `Bearer ${data.accessToken}`,
+        }
+      });
+
+      if (checkValidToken.status !== 200) {
+        const error = await checkValidToken.json();
+        return json({ status: 'Api key is invalid', error }, { status: checkValidToken.status });
+      } else {
+        updatedData.accessToken = data.accessToken;
+      }
+    }
+
+    if (data.testAccessToken) {
+      const checkValidToken = await fetch(`${process.env.SANDBOX_API}/me`, {
+        method: 'GET',
+        headers: {
+          accept: 'application/json',
+          Authorization: `Bearer ${data.testAccessToken}`,
+        }
+      });
+
+      if (checkValidToken.status !== 200) {
+        const error = await checkValidToken.json();
+        return json({ status: 'Test key invalid', error }, { status: checkValidToken.status });
+      } else {
+        updatedData.testAccessToken = data.testAccessToken;
+      }
     }
 
     if (shopData) {
+      if (updatedData.accessToken) {
+        updatedData.configStatus = 'active';
+      } else if (updatedData.testAccessToken) {
+        updatedData.configStatus = 'test';
+      }
+
       const updatedShop = await prisma.shop.update({
         where: {
           shop: data.shop,
           },
-        data: {
-          accessToken: data.key,
-        }
+        // @ts-ignore
+        data: updatedData
       });
       return json({ status: 'Updated', updatedShop }, { status: 200 });
     }
@@ -132,7 +165,8 @@ export default function Index() {
   const actionData = useActionData();
   const submit = useSubmit();
   const [key, setKey] = useState(shopData.accessToken || '');
-  const [isEditing, setIsEditing] = useState(false);
+  const [testKey, setTestKey] = useState(shopData.testAccessToken || '');
+  const [isEditing, setIsEditing] = useState(shopData.accessToken || shopData.testAccessToken ? false : true);
   const [activeToast, setActiveToast] = useState(false);
 
   useEffect(() => {
@@ -148,16 +182,20 @@ export default function Index() {
     (newValue) => setKey(newValue),
     [],
   );
+  const handleTestKeyChange = useCallback((newValue) => setTestKey(newValue),
+    [],
+  );
   const toggleActiveToast = useCallback(() => setActiveToast((active) => !active), []);
 
   const toastMarkup = activeToast ? (
     <Toast content="API key is unvalid" error onDismiss={toggleActiveToast} />
   ) : null;
 
-  const saveAPIkey = async (key, shop) => {
+  const saveAPIkey = async (key, shop, testKey) => {
     const data = {
       shop: shop,
       accessToken: key,
+      testAccessToken: testKey,
     }
 
     submit(data, { method: "post" });
@@ -209,14 +247,26 @@ export default function Index() {
                     </List.Item>
                   </List>
 
-                  <Divider />
-
                   <TextField
                     label="API key"
                     value={key}
                     onChange={handleChange}
                     autoComplete="off"
-                    disabled={shopData.accessToken && !isEditing}
+                    disabled={!isEditing}
+                  />
+
+                  <Divider />
+
+                  <Text as="h2" variant="headingMd">
+                    Or try our provider in test mode (optional):
+                  </Text>
+
+                  <TextField
+                    label="Test key"
+                    value={testKey}
+                    onChange={handleTestKeyChange}
+                    autoComplete="off"
+                    disabled={!isEditing}
                   />
 
                 </BlockStack>
@@ -225,7 +275,7 @@ export default function Index() {
                     {isEditing ? 'Cancel' : 'Edit'}
                   </Button>
 
-                  <Button variant={"primary"} disabled={shopData.accessToken && !isEditing} onClick={() => saveAPIkey(key, shopData.shop)}>
+                  <Button variant={"primary"} disabled={!isEditing} onClick={() => saveAPIkey(key, shopData.shop, testKey)}>
                     Submit
                   </Button>
                 </InlineStack>

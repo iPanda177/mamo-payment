@@ -6,9 +6,14 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// datasource db {
+//   provider = "sqlite"
+//   url      = "file:./dev.sqlite"
+// }
 
 model Session {
   id          String    @id
@@ -25,7 +30,9 @@ model Shop {
   id                 Int       @id @default(autoincrement())
   shop               String    @unique
   accessToken        String
+  testAccessToken    String?
   sessionId          String
+  configStatus       String?
 }
 
 model Payment {

@@ -23,6 +23,10 @@ export async function action({ request }) {
       return json({ error: 'No shop found' }, { status: 404 });
     }
 
+    if (!payment.test && shopData.configStatus !== 'test') {
+        return json({ error: 'Shop is not in test mode' }, { status: 404 });
+    }
+
     const createPaymentLink = await fetch(`${payment.test ? process.env.SANDBOX_API : process.env.PRODUCTION_API}/links`, {
       method: 'POST',
       headers: {
