@@ -170,7 +170,8 @@ export default function Index() {
   const [activeToast, setActiveToast] = useState(false);
 
   useEffect(() => {
-    if (actionData && actionData.status === 'Activated') {
+    console.log(actionData)
+    if (actionData && (actionData.status === 'Activated' || actionData.status === 'Updated')) {
       window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${'0e2f137681cd5353bf3566ec0d880b9c'}/settings`
     } else if (actionData && actionData.status === 'Unauthorized') {
       setActiveToast(true);
