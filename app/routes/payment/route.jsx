@@ -23,7 +23,7 @@ export async function action({ request }) {
       return json({ error: 'No shop found' }, { status: 404 });
     }
 
-    if (!payment.test && shopData.configStatus !== 'test') {
+    if (!payment.test && shopData.configStatus === 'test') {
         return json({ error: 'Shop is not in test mode' }, { status: 404 });
     }
 
@@ -46,6 +46,9 @@ export async function action({ request }) {
         email: payment.customer.email,
         external_id: payment.id,
         platform: 'shopify',
+        payment_methods: [
+          'card',
+        ],
         custom_data: {
           payment_id: payment.id,
           gid: payment.gid,
