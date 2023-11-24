@@ -52,13 +52,10 @@ export async function action({ request, params }) {
       }
     });
 
-    const updatedData = {
-      accessToken: null,
-      testAccessToken: null,
-    }
+    const updatedData = {}
 
     if (data.accessToken) {
-      const checkValidToken = await fetch(`${process.env.PRODUCTION_API}/me`, {
+      const checkValidToken = await fetch(`${process.env.SANDBOX_API}/me`, {
         method: 'GET',
         headers: {
           accept: 'application/json',
@@ -91,13 +88,14 @@ export async function action({ request, params }) {
       }
     }
 
-    if (shopData) {
-      if (updatedData.accessToken) {
-        updatedData.configStatus = 'active';
-      } else if (updatedData.testAccessToken) {
-        updatedData.configStatus = 'test';
-      }
+    if (updatedData.accessToken) {
+      updatedData.configStatus = 'active';
+    } else if (updatedData.testAccessToken) {
+      console.log('here')
+      updatedData.configStatus = 'test';
+    }
 
+    if (shopData) {
       const updatedShop = await prisma.shop.update({
         where: {
           shop: data.shop,
@@ -111,8 +109,8 @@ export async function action({ request, params }) {
     await prisma.shop.create({
       data: {
         shop: data.shop,
-        accessToken: data.accessToken,
         sessionId: session.id,
+        ...updatedData,
       }
     });
 
@@ -162,6 +160,7 @@ export async function action({ request, params }) {
 
 export default function Index() {
   const { shopData } = useLoaderData();
+  console.log(shopData.accessToken || shopData.testAccessToken)
   const actionData = useActionData();
   const submit = useSubmit();
   const [key, setKey] = useState(shopData.accessToken || '');
@@ -272,7 +271,7 @@ export default function Index() {
 
                 </BlockStack>
                 <InlineStack gap="300" align="end">
-                  <Button disabled={!shopData.accessToken} onClick={() => toggleIsEditing()}>
+                  <Button disabled={!shopData.accessToken && !shopData.testAccessToken} onClick={() => toggleIsEditing()}>
                     {isEditing ? 'Cancel' : 'Edit'}
                   </Button>
 

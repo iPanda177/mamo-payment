@@ -2,7 +2,7 @@
 
 name = "Mamo Payments App"
 client_id = "0e2f137681cd5353bf3566ec0d880b9c"
-application_url = "https://plugins-shopify.business.mamopay.com"
+application_url = "https://7af0-194-31-212-75.ngrok-free.app"
 embedded = false
 
 [access_scopes]
@@ -11,9 +11,9 @@ scopes = "write_payment_gateways,write_payment_sessions"
 
 [auth]
 redirect_urls = [
-  "https://plugins-shopify.business.mamopay.com/auth/callback",
-  "https://plugins-shopify.business.mamopay.com/auth/shopify/callback",
-  "https://plugins-shopify.business.mamopay.com/api/auth/callback"
+  "https://7af0-194-31-212-75.ngrok-free.app/auth/callback",
+  "https://7af0-194-31-212-75.ngrok-free.app/auth/shopify/callback",
+  "https://7af0-194-31-212-75.ngrok-free.app/api/auth/callback"
 ]
 
 [webhooks]

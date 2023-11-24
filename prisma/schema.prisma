@@ -5,15 +5,15 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 // datasource db {
-//   provider = "sqlite"
-//   url      = "file:./dev.sqlite"
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
 // }
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.sqlite"
+}
 
 model Session {
   id          String    @id
@@ -29,7 +29,7 @@ model Session {
 model Shop {
   id                 Int       @id @default(autoincrement())
   shop               String    @unique
-  accessToken        String
+  accessToken        String?
   testAccessToken    String?
   sessionId          String
   configStatus       String?
