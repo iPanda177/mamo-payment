@@ -55,7 +55,7 @@ export async function action({ request, params }) {
     const updatedData = {}
 
     if (data.accessToken) {
-      const checkValidToken = await fetch(`${process.env.SANDBOX_API}/me`, {
+      const checkValidToken = await fetch(`${process.env.PRODUCTION_API}/me`, {
         method: 'GET',
         headers: {
           accept: 'application/json',
