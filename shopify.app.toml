@@ -2,7 +2,7 @@
 
 name = "Mamo Payments App"
 client_id = "0e2f137681cd5353bf3566ec0d880b9c"
-application_url = "https://plugins-shopify.business.mamopay.com"
+application_url = "https://courtesy-english-applicants-se.trycloudflare.com"
 embedded = false
 
 [access_scopes]
@@ -11,9 +11,9 @@ scopes = "write_payment_gateways,write_payment_sessions"
 
 [auth]
 redirect_urls = [
-  "https://plugins-shopify.business.mamopay.com/auth/callback",
-  "https://plugins-shopify.business.mamopay.com/auth/shopify/callback",
-  "https://plugins-shopify.business.mamopay.com/api/auth/callback"
+  "https://courtesy-english-applicants-se.trycloudflare.com/auth/callback",
+  "https://courtesy-english-applicants-se.trycloudflare.com/auth/shopify/callback",
+  "https://courtesy-english-applicants-se.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]

@@ -96,23 +96,22 @@ export async function action({ request, params }) {
     }
 
     if (shopData) {
-      const updatedShop = await prisma.shop.update({
+      await prisma.shop.update({
         where: {
           shop: data.shop,
           },
         // @ts-ignore
         data: updatedData
       });
-      return json({ status: 'Updated', updatedShop }, { status: 200 });
+    } else {
+      await prisma.shop.create({
+        data: {
+          shop: data.shop,
+          sessionId: session.id,
+          ...updatedData,
+        }
+      });
     }
-
-    await prisma.shop.create({
-      data: {
-        shop: data.shop,
-        sessionId: session.id,
-        ...updatedData,
-      }
-    });
 
     const apiUrl = `https://${data.shop}/payments_apps/api/${LATEST_API_VERSION}/graphql.json`;
     const graphQlContent = `
@@ -160,7 +159,6 @@ export async function action({ request, params }) {
 
 export default function Index() {
   const { shopData } = useLoaderData();
-  console.log(shopData.accessToken || shopData.testAccessToken)
   const actionData = useActionData();
   const submit = useSubmit();
   const [key, setKey] = useState(shopData.accessToken || '');
@@ -169,10 +167,9 @@ export default function Index() {
   const [activeToast, setActiveToast] = useState(false);
 
   useEffect(() => {
-    console.log(actionData)
-    if (actionData && (actionData.status === 'Activated' || actionData.status === 'Updated')) {
+    if (actionData && actionData.status === 'Activated') {
       window.location.href = `https://${shopData.shop}/services/payments_partners/gateways/${'0e2f137681cd5353bf3566ec0d880b9c'}/settings`
-    } else if (actionData && actionData.status === 'Unauthorized') {
+    } else if (actionData && (actionData.status === 'Unauthorized' || actionData.status === 'Api key is invalid')) {
       setActiveToast(true);
     }
   }, [actionData]);
